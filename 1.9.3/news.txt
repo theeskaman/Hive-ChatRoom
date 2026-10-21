@@ -1,0 +1,4 @@
+📢 HIVE 1.9.3 is here!
+- ESP01S stability improved
+- News panel on login screen
+- Reduced memory usage
