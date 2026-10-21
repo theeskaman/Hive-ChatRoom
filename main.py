@@ -100,6 +100,15 @@ def _pbkdf2_sha256(password, salt, rounds=PASSWORD_ROUNDS):
             derived[index] ^= block[index]
     return bytes(derived)
 
+def _secure_random_bytes(length):
+    random_source = getattr(os, "urandom", None)
+    if random_source is None:
+        raise RuntimeError("Secure random source unavailable; refusing to issue session tokens")
+    data = random_source(length)
+    if len(data) != length:
+        raise RuntimeError("Random source returned an invalid number of bytes")
+    return data
+
 def _new_salt(username):
     try:
         return os.urandom(16)
@@ -141,10 +150,8 @@ def _password_matches(stored, candidate):
 def create_session(username, role):
     global session_counter
     session_counter += 1
-    try:
-        seed = os.urandom(24)
-    except:
-        seed = machine.unique_id() + str(time.ticks_ms()).encode() + str(session_counter).encode() + username.encode('utf-8')
+    # Never downgrade session tokens to predictable board-ID/tick-derived values.
+    seed = _secure_random_bytes(24)
     token = ubinascii.hexlify(_sha256(seed)[:16]).decode('ascii')
     if len(sessions) >= 8:
         oldest_token = None
