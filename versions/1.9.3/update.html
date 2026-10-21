@@ -315,7 +315,7 @@
                 <option value="update.html">Update Manager (update.html)</option>
                 <option value="maintenance.html">Maintenance Page (maintenance.html)</option>
             </select>
-            <input type="password" id="adminPass" placeholder="Admin Password">
+            <p class="desc">Sign in as an administrator in the chat page first. This manager uses that temporary session.</p>
             <input type="file" id="fileInput" accept=".html">
             <button id="uploadBtn">🚀 Upload & Replace</button>
             <div id="uploadStatus" class="status"></div>
@@ -386,7 +386,7 @@
         setTimeout(() => div.style.display = 'none', 4000);
     }
 
-    // ========== تمام درخواست‌ها با متد GET ==========
+    // Public read-only requests use GET; management calls use POST with a short-lived session token.
     async function getJson(url) {
         try {
             const res = await fetch(url);
@@ -397,26 +397,41 @@
         }
     }
 
-    // ========== آپلود فایل (GET با base64 در URL) ==========
+    async function postJson(url, payload) {
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            return await res.json();
+        } catch (e) {
+            return { success: false, message: 'Network error' };
+        }
+    }
+
+    function currentAdminToken() {
+        return sessionStorage.getItem('chat_token') || '';
+    }
+
+    // ========== Upload files using POST ==========
     const targetSelect = document.getElementById('targetSelect');
-    const adminPass = document.getElementById('adminPass');
     const fileInput = document.getElementById('fileInput');
     const uploadBtn = document.getElementById('uploadBtn');
     const uploadStatus = document.getElementById('uploadStatus');
 
     uploadBtn.onclick = async () => {
-        const pass = adminPass.value.trim();
+        const token = currentAdminToken();
         const file = fileInput.files[0];
-        if (!pass || !file) {
-            showStatus(uploadStatus, 'Select file and enter password', 'error');
+        if (!token || !file) {
+            showStatus(uploadStatus, 'Open the chat page and sign in as an administrator first.', 'error');
             return;
         }
         const target = targetSelect.value;
         const reader = new FileReader();
         reader.onload = async (e) => {
             const base64 = e.target.result.split(',')[1];
-            const url = `/api/update?password=${encodeURIComponent(pass)}&filename=${encodeURIComponent(target)}&content_base64=${encodeURIComponent(base64)}`;
-            const data = await getJson(url);
+            const data = await postJson('/api/update', { token, filename: target, content_base64: base64 });
             if (data.success) {
                 showStatus(uploadStatus, `✅ ${target} updated!`, 'success');
                 loadFileList();
@@ -427,14 +442,19 @@
         reader.readAsDataURL(file);
     };
 
-    // ========== لیست فایل‌ها (GET) ==========
+    // ========== Admin-only file list (POST) ==========
     const refreshBtn = document.getElementById('refreshBtn');
     const fileListDiv = document.getElementById('fileList');
     const deleteStatus = document.getElementById('deleteStatus');
 
     async function loadFileList() {
         fileListDiv.innerHTML = '<div style="padding:0.5rem; text-align:center;">Loading...</div>';
-        const data = await getJson('/api/list_files');
+        const token = currentAdminToken();
+        if (!token) {
+            fileListDiv.innerText = 'Administrator session missing. Sign in from the chat page in this tab first.';
+            return;
+        }
+        const data = await postJson('/api/list_files', { token });
         if (data.success && Array.isArray(data.files)) {
             if (data.files.length === 0) {
                 fileListDiv.innerHTML = '<div style="text-align:center;padding:1rem;">No files found.</div>';
@@ -452,9 +472,9 @@
             document.querySelectorAll('.delete-btn').forEach(btn => {
                 btn.onclick = async () => {
                     const name = btn.dataset.name;
-                    const pass = prompt(`Admin password to delete "${name}":`);
-                    if (!pass) return;
-                    const delData = await getJson(`/api/delete_file?password=${encodeURIComponent(pass)}&filename=${encodeURIComponent(name)}`);
+                    const token = currentAdminToken();
+                    if (!token) { showStatus(deleteStatus, 'Administrator session missing.', 'error'); return; }
+                    const delData = await postJson('/api/delete_file', { token, filename: name });
                     if (delData.success) {
                         showStatus(deleteStatus, '✅ Deleted: ' + name, 'success');
                         loadFileList();
