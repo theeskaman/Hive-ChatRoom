@@ -93,7 +93,7 @@ git tag -f 1.8.3-lite bb4517203de0c2de23178e93d9e5cec7b4c40b3d
 git tag -f 1.8.4 cc834a76c5ff87bdbef7a8c8203d286f2cc3fa69
 git tag -f 1.9.1 85175a0808974bb5672f0a6055f8e40e707e29c5
 git tag -f 1.9.2 2d6101ef1fcaa5ac4d1a4b3759f759eb983c07c1
-git tag -f 1.9.3 da507548baff9fe5d93b925c63f4e96863db5aea
+git tag -f 1.9.3 6b29fa3abb202ac9599f9b8c996962a0c15bbe48
 
 git push --force origin \
   refs/tags/1.6-stable:refs/tags/1.6-stable \
@@ -115,6 +115,20 @@ git push origin --delete \
   security-cleanup-1.1-to-1.5 \
   security-cleanup-1.6-to-1.7 \
   security-readme-release-fix
+```
+
+After the tags have been pushed and verified, change each standalone ZIP link from `refs/heads/release-snapshot/VERSION.zip` to `refs/tags/TAG.zip` and commit the README change. Then delete the eight temporary package branches:
+
+```sh
+git push origin --delete \
+  release-snapshot/1.6-stable \
+  release-snapshot/1.7.2 \
+  release-snapshot/1.8.3 \
+  release-snapshot/1.8.3-lite \
+  release-snapshot/1.8.4 \
+  release-snapshot/1.9.1 \
+  release-snapshot/1.9.2 \
+  release-snapshot/1.9.3
 ```
 
 Keep `release-snapshot/*` until you have verified the tags and switched the download links. The source folders under `versions/` on `main` now provide the complete historical source index.
