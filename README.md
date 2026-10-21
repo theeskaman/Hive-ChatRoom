@@ -1,12 +1,28 @@
-# Hive-ChatRoom — Release source snapshot
+# Hive-ChatRoom 1.9.2 Alpha — Historical Archive
 
-This archive contains the source files for one Hive-ChatRoom release. Keep the included files together and do not mix files from other versions.
+## Security status: legacy Alpha / not recommended for deployment
 
-## Before first boot
+This is a preserved Alpha build. It retains legacy authentication and plain-text password storage, and some browser requests send credentials in URLs. This can expose secrets in browser history and request logs.
 
-1. Open `main.py` and replace `YOUR_WIFI_SSID` and `YOUR_WIFI_PASSWORD` with the credentials for your 2.4 GHz Wi-Fi network.
-2. If the firmware defines `ADMIN_PASS`, replace `CHANGE_ME_TO_A_LONG_UNIQUE_PASSWORD` with a strong, unique password before starting it. Versions that keep the placeholder disable the corresponding admin functions.
-3. Upload `main.py` to the Raspberry Pi Pico as `/main.py`. Upload any companion HTML/text files from this archive with their original names.
-4. Read the repository's Getting Started and Security notes before deploying: https://github.com/theeskaman/Hive-ChatRoom
+**Do not use this build on an untrusted network and never expose it to the public Internet.** Prefer the maintained 1.9.3 source for evaluation. Even 1.9.3 uses plain HTTP and should stay on a trusted, isolated LAN.
 
-Do not commit a copy containing real Wi-Fi or admin credentials. Use on a trusted local network only; do not expose the service directly to the Internet.
+Before testing, replace `YOUR_WIFI_SSID` and `YOUR_WIFI_PASSWORD` in `main.py`, and set `ADMIN_PASS` to a strong, unique value. This package is preserved for historical compatibility, not security support.
+
+
+## Files
+
+This ZIP contains only the files needed for this version:
+
+- `main.py` — firmware entry point
+- `chat.html` — chat interface
+- `maintenance.html` — maintenance page
+- `update.html` — update manager
+
+## Install
+
+1. Back up device-side history, users, configuration and log files.
+2. Configure Wi-Fi credentials and review the code before first boot.
+3. Copy the included files to the Pico, keeping the names unchanged.
+4. Restart and test only on a trusted local network.
+
+See the main repository [README](https://github.com/theeskaman/Hive-ChatRoom/blob/main/README.md) for hardware notes and troubleshooting.
