@@ -274,7 +274,7 @@ def init_users():
                     changed = True
                     continue
                 # Remove known weak demo credentials instead of merely hashing them.
-                if (parts[0] == "admin" and parts[1] == "nigga") or (parts[0] == "test" and parts[1] == "test123"):
+                if parts[0] == "test" or (parts[0] == "admin" and len(parts[1]) < 12):
                     changed = True
                     continue
                 if not parts[1].startswith(PASSWORD_PREFIX + "$"):
