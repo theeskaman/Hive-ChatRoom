@@ -387,16 +387,6 @@
     }
 
     // Public read-only requests use GET; management calls use POST with a short-lived session token.
-    async function getJson(url) {
-        try {
-            const res = await fetch(url);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            return await res.json();
-        } catch(e) {
-            return { success: false, message: e.message };
-        }
-    }
-
     async function postJson(url, payload) {
         try {
             const res = await fetch(url, {
