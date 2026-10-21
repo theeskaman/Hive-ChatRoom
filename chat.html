@@ -500,7 +500,7 @@
         </form>
         <div class="menu-buttons">
             <button onclick="location.reload()">🔄 Refresh</button>
-            <a href="/download_temps" target="_blank">🌡️ Log</a>
+            <button onclick="downloadTempLog()">🌡️ Log</button>
             <button onclick="toggleScroll()">📌 Scroll</button>
             <button onclick="logout()">🚪 Logout</button>
         </div>
@@ -593,6 +593,14 @@
     }
 
     function logout() {
+        const token = sessionStorage.getItem('chat_token');
+        if (token) {
+            fetch('/api/logout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token })
+            }).catch(() => {});
+        }
         localStorage.removeItem('chat_username');
         sessionStorage.removeItem('chat_token');
         localStorage.removeItem('chat_password');
@@ -600,6 +608,29 @@
         document.getElementById('loginOverlay').style.display = 'flex';
         document.getElementById('appMain').style.display = 'none';
         clearReply();
+    }
+
+    async function downloadTempLog() {
+        const token = sessionStorage.getItem('chat_token');
+        if (!token) { logout(); return; }
+        try {
+            const res = await fetch('/download_temps', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token })
+            });
+            if (res.status === 401) { logout(); return; }
+            if (!res.ok) { showToast('Could not download temperature log'); return; }
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'temp_log.txt';
+            link.click();
+            URL.revokeObjectURL(url);
+        } catch (e) {
+            showToast('Could not download temperature log');
+        }
     }
 
     // ========== NEWS FETCH ==========
@@ -639,6 +670,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token, msg, reply })
             });
+            if (res.status === 401) { logout(); return; }
             const data = await res.json();
             if (data.success) {
                 document.getElementById('msg_input').value = '';
@@ -670,6 +702,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token, since: lastMsgId })
             });
+            if (r.status === 401) { logout(); return; }
             const d = await r.json();
             if (d.messages?.length) {
                 for (let msg of d.messages) appendMessage(msg);
@@ -708,6 +741,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token, msg_id: msgId, emoji })
             });
+            if (res.status === 401) { logout(); return; }
             const data = await res.json();
             if (data.success && data.reactions) {
                 updateMessageReactions(msgId, data.reactions);
@@ -885,11 +919,12 @@
         document.getElementById('unpinBtn').addEventListener('click', async () => {
             const token = sessionStorage.getItem('chat_token');
             if (!token) { logout(); return; }
-            await fetch('/api/admin', {
+            const res = await fetch('/api/admin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token, cmd: 'unpin' })
             });
+            if (res.status === 401) { logout(); return; }
             pollMessages();
         });
     }
