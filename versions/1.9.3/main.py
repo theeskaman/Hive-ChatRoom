@@ -1294,7 +1294,7 @@ def run():
                         params = parse_request_params(req, query, method)
                         if not has_admin_session(params.get('token', '')):
                             err_body = b'{"success":false,"message":"Admin session required"}'
-                            err_headers = b'HTTP/1.1 401 Unauthorized\\r\\nContent-Type: application/json\\r\\nContent-Length: ' + str(len(err_body)).encode() + b'\\r\\nCache-Control: no-store\\r\\nConnection: close\\r\\n\\r\\n'
+                            err_headers = b'HTTP/1.1 401 Unauthorized\r\nContent-Type: application/json\r\nContent-Length: ' + str(len(err_body)).encode() + b'\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n'
                             send_small_response(conn_id, err_headers + err_body)
                         else:
                             serve_file_stream(conn_id, TEMP_LOG_FILE, content_type="text/plain", default_binary=b"")
