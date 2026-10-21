@@ -6,8 +6,9 @@ import dht
 import json
 import sys
 
-SSID = "Mehrbod"
-PASSWORD = "357913802"
+SSID = "YOUR_WIFI_SSID"
+PASSWORD = "YOUR_WIFI_PASSWORD"
+ADMIN_PASS = "CHANGE_ME_TO_A_LONG_UNIQUE_PASSWORD"
 PORT = 80
 MAX_MSGS = 100
 DISPLAY_MSGS = 20
@@ -624,7 +625,7 @@ while True:
                                 k, v = pair.split(b'=', 1)
                                 params[k.decode()] = v.decode()
                     user_pass = params.get('pass', '')
-                    if user_pass == 'admin':
+                    if ADMIN_PASS != "CHANGE_ME_TO_A_LONG_UNIQUE_PASSWORD" and user_pass == ADMIN_PASS:
                         try:
                             os.remove("messages.txt")
                         except:
