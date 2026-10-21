@@ -1,47 +1,32 @@
-# HIVE — Local Wi-Fi Chat Room
+# Hive-ChatRoom
 
-HIVE is a small local-network chat room built around a Raspberry Pi Pico and an ESP-01S Wi-Fi module. The project was created as a practical way for nearby devices to exchange short messages without depending on a hosted chat service. The original design targets up to eight devices on the same local network.
+A type of chat room that uses a Raspberry Pi Pico paired with an ESP-01S Wi-Fi module as the backend server. It can be used on a local network by up to 8 devices at the same time.
 
-The project grew during the 88-day internet blackout in Iran, when privacy and access to independent communication tools mattered especially. HIVE can be used for short family messages and simple clipboard-sharing workflows, provided the devices are connected to the same network.
+I developed this code during the 88-day widespread internet blackout in Iran to avoid relying on government-backed applications that offer almost no privacy. It can be used to sync the clipboard between multiple devices or to exchange short messages among family members.
 
-## Hardware and software
+## Versions
 
-- Raspberry Pi Pico running MicroPython
-- ESP-01S Wi-Fi module, configured to match the firmware
-- Optional DHT11 temperature/humidity sensor (the firmware versions shown here use GPIO 0 by default)
-- Browser on a phone, tablet, or computer connected to the same local network
+All versioned code is kept in the `versions/` folder, with a separate folder for each version. The firmware file is named `main.py`, so it is easy to identify what should be copied to the Raspberry Pi Pico. Some versions include extra files for the browser interface or an alternative build.
 
-Features vary by version. Depending on the firmware, they include message history, pinned messages, reactions, user roles, moderation controls, temperature logging, and maintenance/update pages.
-
-## Version history
-
-Each version has its own folder. In firmware folders, `main.py` is the default MicroPython entry point to copy to the Pico. Where a version includes an additional variant or interface, its filename and folder README explain the difference.
-
-| Version | What is included |
-| --- | --- |
-| [1.8.3](1.8.3/) | Standard firmware and a lighter Lite variant |
-| [1.8.4](1.8.4/) | Primary firmware, an alternative server implementation, and two distinct chat UI designs |
-| [1.9.1](1.9.1/) | Firmware and chat, maintenance, and update pages |
-| [1.9.2](1.9.2/) | Firmware and chat, maintenance, and update pages |
-| [1.9.3](1.9.3/) | Stable-labelled firmware, chat UI, maintenance/update pages, and login news text |
-
-Older 1.8-era snapshots are retained at the repository root for historical reference. The `initial-versions` and `versions-1.6-to-1.7` branches contain the earlier archived versions.
+- [1.8-beta](versions/1.8-beta/) — early 1.8 beta build.
+- [1.8.1](versions/1.8.1/) — 1.8.1 firmware.
+- [1.8.2](versions/1.8.2/) — 1.8.2 firmware.
+- [1.8.3](versions/1.8.3/) — standard firmware and a Lite alternative (`main_lite.py`).
+- [1.8.4](versions/1.8.4/) — firmware, an alternative server implementation, and two different chat interfaces (`chat.html` and `chat-alternative.html`). Both interfaces are kept intentionally.
+- [1.9.1](versions/1.9.1/) — firmware with chat, maintenance, and update pages.
+- [1.9.2](versions/1.9.2/) — firmware with chat, maintenance, and update pages.
+- [1.9.3](versions/1.9.3/) — firmware with chat, maintenance, and update pages, plus `news.txt` for the login news panel.
 
 ## Getting started
 
-1. Choose the version folder that matches the features you need.
-2. Read that folder's `README.md` before copying files to the board.
-3. Open the selected firmware and replace the Wi-Fi settings and any default credentials with your own values.
-4. Copy the chosen firmware to the Pico as `main.py`.
-5. Copy the HTML/text assets required by that firmware to the location expected by its file-serving code.
-6. Restart the board and test the chat from a second device on the same local network.
+1. Choose a version and open its folder.
+2. Update the Wi-Fi settings and any default credentials in `main.py` before using it.
+3. Copy that version's `main.py` to the Pico. If you want the Lite build in 1.8.3, use `main_lite.py` as the board's `main.py` instead.
+4. Copy the HTML and text files that belong to the same version to the locations expected by its firmware.
+5. Restart the Pico and test the chat from another device connected to the same local network.
 
-The versions are historical source snapshots, not a guarantee that every combination of firmware, ESP-01S configuration, and browser assets has been tested together. Test the exact version on your hardware before relying on it.
-
-## Security notes
-
-HIVE is designed for local-network use. Before running it, change the Wi-Fi credentials and all default account or administrator credentials found in the selected source file. Do not expose the device directly to the public internet without adding and reviewing appropriate security protections.
+The files are kept as separate version snapshots, and the exact features differ between releases. Test the version you choose on your own Pico and ESP-01S setup before relying on it.
 
 ## License
 
-This project is distributed under the MIT License. See [LICENSE](LICENSE).
+This project is licensed under the MIT License. See [LICENSE](LICENSE).
