@@ -91,9 +91,9 @@ git tag -f 1.7.2 38ba8f4c276a8fa0632f4ee4bcbad8ca234b5f67
 git tag -f 1.8.3 9a372b5aa2e0ed910da35b20da0ba8079f38f895
 git tag -f 1.8.3-lite bb4517203de0c2de23178e93d9e5cec7b4c40b3d
 git tag -f 1.8.4 cc834a76c5ff87bdbef7a8c8203d286f2cc3fa69
-git tag -f 1.9.1 00e7ef2cafd7d072818c0de763c83035aff49038
-git tag -f 1.9.2 9cdcf9e0f59f67d06e9b95c7928d0ccf100cd886
-git tag -f 1.9.3 842569da397b54282888c7cd898b345fc63c36f3
+git tag -f 1.9.1 85175a0808974bb5672f0a6055f8e40e707e29c5
+git tag -f 1.9.2 2d6101ef1fcaa5ac4d1a4b3759f759eb983c07c1
+git tag -f 1.9.3 da507548baff9fe5d93b925c63f4e96863db5aea
 
 git push --force origin \
   refs/tags/1.6-stable:refs/tags/1.6-stable \
