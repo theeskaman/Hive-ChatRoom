@@ -1053,20 +1053,13 @@ def run():
                         gc.collect()
                         continue
 
-                    if method == b'GET' and path == b'/api/get_reactions':
-                        params = {}
-                        if query:
-                            for pair in query.split(b'&'):
-                                if b'=' in pair:
-                                    k, v = pair.split(b'=', 1)
-                                    params[k.decode()] = v.decode()
-                        msg_id = int(params.get('msg_id', 0))
-                        if msg_id == 0:
-                            resp = json.dumps({"success": False, "message": "No msg_id"}).encode('utf-8')
-                        else:
-                            msg_reactions = get_reactions_for_msg(msg_id)
-                            resp = json.dumps({"success": True, "reactions": msg_reactions}).encode('utf-8')
-                        headers = b'HTTP/1.1 200 OK\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: ' + str(len(resp)).encode() + b'\r\nConnection: close\r\n\r\n'
+                    if method == b'POST' and path == b'/api/logout':
+                        params = parse_request_params(req, query, method)
+                        token = params.get('token', '')
+                        if token in sessions:
+                            del sessions[token]
+                        resp = b'{"success":true}'
+                        headers = b'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: ' + str(len(resp)).encode() + b'\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n'
                         send_small_response(conn_id, headers + resp)
                         uart.write(b'AT+CIPCLOSE=' + str(conn_id).encode() + b'\r\n')
                         conn_id = None
@@ -1297,8 +1290,14 @@ def run():
                         gc.collect()
                         continue
 
-                    if method == b'GET' and path == b'/download_temps':
-                        serve_file_stream(conn_id, TEMP_LOG_FILE, content_type="text/plain", default_binary=b"")
+                    if method == b'POST' and path == b'/download_temps':
+                        params = parse_request_params(req, query, method)
+                        if not has_admin_session(params.get('token', '')):
+                            err_body = b'{"success":false,"message":"Admin session required"}'
+                            err_headers = b'HTTP/1.1 401 Unauthorized\r\nContent-Type: application/json\r\nContent-Length: ' + str(len(err_body)).encode() + b'\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n'
+                            send_small_response(conn_id, err_headers + err_body)
+                        else:
+                            serve_file_stream(conn_id, TEMP_LOG_FILE, content_type="text/plain", default_binary=b"")
                         uart.write(b'AT+CIPCLOSE=' + str(conn_id).encode() + b'\r\n')
                         conn_id = None
                         gc.collect()
