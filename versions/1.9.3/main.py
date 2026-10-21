@@ -6,6 +6,10 @@ import dht
 import json
 import sys
 import ubinascii
+try:
+    import uhashlib as hashlib
+except ImportError:
+    import hashlib
 
 SSID = "YOUR_WIFI_SSID"
 PASSWORD = "YOUR_WIFI_PASSWORD"
@@ -65,6 +69,137 @@ def percent_decode(bs):
         out.append(bs[i])
         i += 1
     return bytes(out)
+
+
+
+# ===== Password hashing and short-lived, in-memory sessions =====
+PASSWORD_ROUNDS = 10000
+PASSWORD_PREFIX = "pbkdf2-sha256"
+SESSION_TTL_MS = 6 * 60 * 60 * 1000
+sessions = {}
+session_counter = 0
+
+def _sha256(data):
+    return hashlib.sha256(data).digest()
+
+def _hmac_sha256(key, message):
+    if len(key) > 64:
+        key = _sha256(key)
+    key = key + (b'\x00' * (64 - len(key)))
+    inner_key = bytes([value ^ 0x36 for value in key])
+    outer_key = bytes([value ^ 0x5c for value in key])
+    return _sha256(outer_key + _sha256(inner_key + message))
+
+def _pbkdf2_sha256(password, salt, rounds=PASSWORD_ROUNDS):
+    password_bytes = password.encode('utf-8')
+    block = _hmac_sha256(password_bytes, salt + b'\x00\x00\x00\x01')
+    derived = bytearray(block)
+    for _ in range(1, rounds):
+        block = _hmac_sha256(password_bytes, block)
+        for index in range(len(derived)):
+            derived[index] ^= block[index]
+    return bytes(derived)
+
+def _new_salt(username):
+    try:
+        return os.urandom(16)
+    except:
+        seed = machine.unique_id() + str(time.ticks_ms()).encode() + username.encode('utf-8')
+        return _sha256(seed)[:16]
+
+def _make_password_hash(password, username):
+    salt = _new_salt(username)
+    salt_hex = ubinascii.hexlify(salt).decode('ascii')
+    digest_hex = ubinascii.hexlify(_pbkdf2_sha256(password, salt, PASSWORD_ROUNDS)).decode('ascii')
+    return PASSWORD_PREFIX + "$" + str(PASSWORD_ROUNDS) + "$" + salt_hex + "$" + digest_hex
+
+def _constant_time_equal(left, right):
+    if len(left) != len(right):
+        return False
+    difference = 0
+    for index in range(len(left)):
+        difference |= left[index] ^ right[index]
+    return difference == 0
+
+def _password_matches(stored, candidate):
+    if not stored.startswith(PASSWORD_PREFIX + "$"):
+        return stored == candidate
+    try:
+        parts = stored.split('$')
+        if len(parts) != 4:
+            return False
+        rounds = int(parts[1])
+        if rounds < 1000 or rounds > 50000:
+            return False
+        salt = ubinascii.unhexlify(parts[2].encode('ascii'))
+        expected = ubinascii.unhexlify(parts[3].encode('ascii'))
+        actual = _pbkdf2_sha256(candidate, salt, rounds)
+        return _constant_time_equal(actual, expected)
+    except:
+        return False
+
+def create_session(username, role):
+    global session_counter
+    session_counter += 1
+    try:
+        seed = os.urandom(24)
+    except:
+        seed = machine.unique_id() + str(time.ticks_ms()).encode() + str(session_counter).encode() + username.encode('utf-8')
+    token = ubinascii.hexlify(_sha256(seed)[:16]).decode('ascii')
+    if len(sessions) >= 8:
+        oldest_token = None
+        oldest_age = -1
+        now = time.ticks_ms()
+        for existing_token, entry in sessions.items():
+            age = time.ticks_diff(now, entry[2])
+            if age > oldest_age:
+                oldest_age = age
+                oldest_token = existing_token
+        if oldest_token is not None:
+            del sessions[oldest_token]
+    sessions[token] = (username, role, time.ticks_ms())
+    return token
+
+def get_session(token):
+    if not token:
+        return None
+    entry = sessions.get(token)
+    if not entry:
+        return None
+    now = time.ticks_ms()
+    if time.ticks_diff(now, entry[2]) > SESSION_TTL_MS:
+        try:
+            del sessions[token]
+        except:
+            pass
+        return None
+    sessions[token] = (entry[0], entry[1], now)
+    return (entry[0], entry[1])
+
+def parse_request_params(req, query, method):
+    if method == b'POST':
+        try:
+            separator = req.find(b'\r\n\r\n')
+            if separator < 0:
+                return {}
+            body = req[separator + 4:].strip()
+            if not body:
+                return {}
+            parsed = json.loads(body.decode('utf-8'))
+            return parsed if isinstance(parsed, dict) else {}
+        except:
+            return {}
+    params = {}
+    if query:
+        for pair in query.split(b'&'):
+            if b'=' in pair:
+                key, value = pair.split(b'=', 1)
+                params[key.decode('utf-8', 'ignore')] = percent_decode(value).decode('utf-8', 'ignore')
+    return params
+
+def has_admin_session(token):
+    session = get_session(token)
+    return bool(session and session[1] == "admin")
 
 def safe_system_error(err_msg, exc=None):
     global system_error_logged
@@ -128,32 +263,53 @@ def get_news():
 def init_users():
     try:
         with open(USERS_FILE, "r") as f:
-            if f.read().strip():
-                return
+            existing_lines = f.readlines()
+        if any(line.strip() for line in existing_lines):
+            migrated = []
+            changed = False
+            for raw_line in existing_lines:
+                line = raw_line.rstrip("\r\n")
+                parts = line.split(':')
+                if len(parts) != 3 or not parts[0] or parts[2] not in ("admin", "user"):
+                    changed = True
+                    continue
+                if not parts[1].startswith(PASSWORD_PREFIX + "$"):
+                    parts[1] = _make_password_hash(parts[1], parts[0])
+                    changed = True
+                migrated.append(":".join(parts))
+            if changed:
+                with open(USERS_FILE, "w") as f:
+                    for line in migrated:
+                        f.write(line + "\n")
+            return
     except:
         pass
     with open(USERS_FILE, "w") as f:
-        if ADMIN_PASS != "CHANGE_ME_TO_A_LONG_UNIQUE_PASSWORD":
-            f.write("admin:" + ADMIN_PASS + ":admin\n")
+        if ADMIN_PASS != "CHANGE_ME_TO_A_LONG_UNIQUE_PASSWORD" and len(ADMIN_PASS) >= 12:
+            f.write("admin:" + _make_password_hash(ADMIN_PASS, "admin") + ":admin\n")
+            print("Initial admin account created.")
         else:
-            print("WARNING: ADMIN_PASS is still a placeholder; no admin account was created.")
-    print("User database initialized; configure ADMIN_PASS before first boot for admin access.")
+            print("WARNING: configure a unique ADMIN_PASS of at least 12 characters before first boot.")
+            print("No default admin or test account was created.")
 
 def register_user(username, password):
     username = sanitize_string(username)[:20]
-    if not username or len(username) < 2:
+    if not username or len(username) < 2 or ':' in username:
         return False, "Invalid username"
-    if len(password) < 4:
-        return False, "Password too short"
+    if len(password) < 12:
+        return False, "Password must be at least 12 characters"
+    if len(password) > 64:
+        return False, "Password is too long"
     try:
         with open(USERS_FILE, "r") as f:
             for line in f:
-                if line.startswith(username + ":"):
+                parts = line.strip().split(':')
+                if len(parts) == 3 and parts[0] == username:
                     return False, "Username exists"
     except:
         pass
     with open(USERS_FILE, "a") as f:
-        f.write(f"{username}:{password}:user\n")
+        f.write(username + ":" + _make_password_hash(password, username) + ":user\n")
     return True, "Registered"
 
 def login_user(username, password):
@@ -161,7 +317,7 @@ def login_user(username, password):
         with open(USERS_FILE, "r") as f:
             for line in f:
                 parts = line.strip().split(':')
-                if len(parts) == 3 and parts[0] == username and parts[1] == password:
+                if len(parts) == 3 and parts[0] == username and _password_matches(parts[1], password):
                     return True, parts[2]
     except:
         pass
