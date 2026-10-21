@@ -710,50 +710,55 @@ def handle_admin_command(username, text):
         machine.reset()
     return True, ("System", f"Unknown: {cmd}")
 
-def handle_list_files():
+def handle_list_files(params):
+    if not has_admin_session(params.get('token', '')):
+        return json.dumps({"success": False, "message": "Admin session required"}).encode('utf-8')
     try:
         files = []
         for item in os.listdir():
+            if item.startswith('.'):
+                continue
             try:
                 size = os.stat(item)[6]
                 files.append({"name": item, "size": size})
             except:
                 files.append({"name": item, "size": 0})
-        return json.dumps({"success": True, "files": files}).encode()
+        return json.dumps({"success": True, "files": files}).encode('utf-8')
     except Exception as e:
-        return json.dumps({"success": False, "message": str(e)}).encode()
+        safe_system_error("List files failed", e)
+        return json.dumps({"success": False, "message": "Could not list files"}).encode('utf-8')
 
 def handle_delete_file(params):
     try:
-        password = params.get('password', '')
-        if ADMIN_PASS == "CHANGE_ME_TO_A_LONG_UNIQUE_PASSWORD" or password != ADMIN_PASS:
-            return json.dumps({"success": False, "message": "Invalid password"}).encode()
+        if not has_admin_session(params.get('token', '')):
+            return json.dumps({"success": False, "message": "Admin session required"}).encode('utf-8')
         filename = params.get('filename', '')
-        if not filename:
-            return json.dumps({"success": False, "message": "No filename"}).encode()
+        if not filename or '/' in filename or '\\' in filename or '..' in filename:
+            return json.dumps({"success": False, "message": "Invalid filename"}).encode('utf-8')
         protected = ['main.py', 'boot.py', 'messages.txt', 'temp_log.txt', 'users.txt', 'reactions.txt', 'config.txt', 'update.html', 'maintenance.html', 'chat.html', 'pinned.txt', 'news.txt']
         if filename in protected:
-            return json.dumps({"success": False, "message": "Cannot delete system file"}).encode()
+            return json.dumps({"success": False, "message": "Cannot delete system file"}).encode('utf-8')
         if filename in os.listdir():
             os.remove(filename)
-            return json.dumps({"success": True, "message": "Deleted"}).encode()
-        else:
-            return json.dumps({"success": False, "message": "File not found"}).encode()
+            return json.dumps({"success": True, "message": "Deleted"}).encode('utf-8')
+        return json.dumps({"success": False, "message": "File not found"}).encode('utf-8')
     except Exception as e:
-        return json.dumps({"success": False, "message": str(e)}).encode()
+        safe_system_error("Delete file failed", e)
+        return json.dumps({"success": False, "message": "Delete failed"}).encode('utf-8')
 
 def handle_update_file(params):
     try:
-        password = params.get('password', '')
-        if ADMIN_PASS == "CHANGE_ME_TO_A_LONG_UNIQUE_PASSWORD" or password != ADMIN_PASS:
-            return json.dumps({"success": False, "message": "Invalid password"}).encode()
+        if not has_admin_session(params.get('token', '')):
+            return json.dumps({"success": False, "message": "Admin session required"}).encode('utf-8')
         filename = params.get('filename', '')
-        if not filename.endswith('.html'):
-            return json.dumps({"success": False, "message": "Only .html files"}).encode()
+        if filename not in ('chat.html', 'maintenance.html', 'update.html'):
+            return json.dumps({"success": False, "message": "Unsupported target file"}).encode('utf-8')
         b64 = params.get('content_base64', '')
-        if not b64:
-            return json.dumps({"success": False, "message": "No content"}).encode()
+        if not b64 or len(b64) > 100000:
+            return json.dumps({"success": False, "message": "Invalid or oversized content"}).encode('utf-8')
         content = ubinascii.a2b_base64(b64)
+        if len(content) > 70000:
+            return json.dumps({"success": False, "message": "File exceeds size limit"}).encode('utf-8')
         try:
             with open(filename, 'rb') as f:
                 old = f.read()
@@ -763,9 +768,10 @@ def handle_update_file(params):
             pass
         with open(filename, 'wb') as f:
             f.write(content)
-        return json.dumps({"success": True, "message": "Updated"}).encode()
+        return json.dumps({"success": True, "message": "Updated"}).encode('utf-8')
     except Exception as e:
-        return json.dumps({"success": False, "message": str(e)}).encode()
+        safe_system_error("Update file failed", e)
+        return json.dumps({"success": False, "message": "Update failed"}).encode('utf-8')
 
 # ========== FILE SERVING WITH CACHING ENABLED ==========
 def serve_file_stream(conn_id, filename, content_type="text/html", default_binary=b''):
@@ -1018,7 +1024,6 @@ def run():
                             "uptime": stats[2],
                             "msg_count": stats[3],
                             "free_mem": gc.mem_free(),
-                            "network": cached_network_info,
                             "maintenance": config["maintenance"],
                             "version": VERSION
                         }
@@ -1050,20 +1055,14 @@ def run():
                         gc.collect()
                         continue
 
-                    if method == b'GET' and path == b'/api/login':
-                        params = {}
-                        if query:
-                            for pair in query.split(b'&'):
-                                if b'=' in pair:
-                                    k, v = pair.split(b'=', 1)
-                                    key = k.decode()
-                                    val = percent_decode(v).decode('utf-8', 'ignore')
-                                    params[key] = val
+                    if method == b'POST' and path == b'/api/login':
+                        params = parse_request_params(req, query, method)
                         username = params.get('username', '').strip()
                         password = params.get('password', '').strip()
                         ok, role = login_user(username, password)
                         if ok:
-                            resp = json.dumps({"success": True, "username": username, "role": role}).encode('utf-8')
+                            token = create_session(username, role)
+                            resp = json.dumps({"success": True, "username": username, "role": role, "token": token}).encode('utf-8')
                         else:
                             resp = json.dumps({"success": False, "message": "Invalid credentials"}).encode('utf-8')
                         headers = b'HTTP/1.1 200 OK\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: ' + str(len(resp)).encode() + b'\r\nConnection: close\r\n\r\n'
@@ -1073,15 +1072,8 @@ def run():
                         gc.collect()
                         continue
 
-                    if method == b'GET' and path == b'/api/register':
-                        params = {}
-                        if query:
-                            for pair in query.split(b'&'):
-                                if b'=' in pair:
-                                    k, v = pair.split(b'=', 1)
-                                    key = k.decode()
-                                    val = percent_decode(v).decode('utf-8', 'ignore')
-                                    params[key] = val
+                    if method == b'POST' and path == b'/api/register':
+                        params = parse_request_params(req, query, method)
                         username = params.get('username', '').strip()
                         password = params.get('password', '').strip()
                         if not username or not password:
@@ -1096,23 +1088,17 @@ def run():
                         gc.collect()
                         continue
 
-                    if method == b'GET' and path == b'/api/reaction':
-                        params = {}
-                        if query:
-                            for pair in query.split(b'&'):
-                                if b'=' in pair:
-                                    k, v = pair.split(b'=', 1)
-                                    key = k.decode()
-                                    val = percent_decode(v).decode('utf-8', 'ignore')
-                                    params[key] = val
-                        username = params.get('username', '').strip()
-                        password = params.get('password', '').strip()
+                    if method == b'POST' and path == b'/api/reaction':
+                        params = parse_request_params(req, query, method)
+                        session = get_session(params.get('token', ''))
                         msg_id = int(params.get('msg_id', 0))
                         emoji = params.get('emoji', '')
-                        ok, _ = login_user(username, password)
-                        if not ok:
-                            resp = json.dumps({"success": False, "message": "Auth failed"}).encode('utf-8')
+                        if not session:
+                            resp = json.dumps({"success": False, "message": "Session expired"}).encode('utf-8')
+                        elif emoji not in ('👍', '❤️', '😂', '😮', '😢', '😡'):
+                            resp = json.dumps({"success": False, "message": "Unsupported reaction"}).encode('utf-8')
                         else:
+                            username = session[0]
                             save_reaction(msg_id, emoji, username)
                             updated_reactions = get_reactions_for_msg(msg_id)
                             resp = json.dumps({"success": True, "reactions": updated_reactions}).encode('utf-8')
@@ -1123,23 +1109,17 @@ def run():
                         gc.collect()
                         continue
 
-                    if method == b'GET' and path == b'/api/admin':
-                        params = {}
-                        if query:
-                            for pair in query.split(b'&'):
-                                if b'=' in pair:
-                                    k, v = pair.split(b'=', 1)
-                                    key = k.decode()
-                                    val = percent_decode(v).decode('utf-8', 'ignore')
-                                    params[key] = val
-                        username = params.get('username', '').strip()
-                        password = params.get('password', '').strip()
+                    if method == b'POST' and path == b'/api/admin':
+                        params = parse_request_params(req, query, method)
+                        session = get_session(params.get('token', ''))
                         cmd = params.get('cmd', '')
-                        ok, role = login_user(username, password)
-                        if not ok or role != "admin":
+                        if not session or session[1] != "admin":
                             resp = json.dumps({"success": False, "message": "Admin only"}).encode('utf-8')
                         else:
-                            if cmd == "maintenance off":
+                            if cmd == "unpin":
+                                save_pinned(0)
+                                resp = json.dumps({"success": True, "message": "Pinned message removed"}).encode('utf-8')
+                            elif cmd == "maintenance off":
                                 config["maintenance"] = False
                                 save_config()
                                 resp = json.dumps({"success": True, "message": "Maintenance OFF"}).encode('utf-8')
@@ -1156,8 +1136,9 @@ def run():
                         gc.collect()
                         continue
 
-                    if method == b'GET' and path == b'/api/list_files':
-                        resp = handle_list_files()
+                    if method == b'POST' and path == b'/api/list_files':
+                        params = parse_request_params(req, query, method)
+                        resp = handle_list_files(params)
                         headers = b'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: ' + str(len(resp)).encode() + b'\r\nConnection: close\r\n\r\n'
                         send_small_response(conn_id, headers + resp)
                         uart.write(b'AT+CIPCLOSE=' + str(conn_id).encode() + b'\r\n')
@@ -1165,15 +1146,8 @@ def run():
                         gc.collect()
                         continue
 
-                    if method == b'GET' and path == b'/api/delete_file':
-                        params = {}
-                        if query:
-                            for pair in query.split(b'&'):
-                                if b'=' in pair:
-                                    k, v = pair.split(b'=', 1)
-                                    key = k.decode()
-                                    val = percent_decode(v).decode('utf-8', 'ignore')
-                                    params[key] = val
+                    if method == b'POST' and path == b'/api/delete_file':
+                        params = parse_request_params(req, query, method)
                         resp = handle_delete_file(params)
                         headers = b'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: ' + str(len(resp)).encode() + b'\r\nConnection: close\r\n\r\n'
                         send_small_response(conn_id, headers + resp)
@@ -1182,15 +1156,8 @@ def run():
                         gc.collect()
                         continue
 
-                    if method == b'GET' and path == b'/api/update':
-                        params = {}
-                        if query:
-                            for pair in query.split(b'&'):
-                                if b'=' in pair:
-                                    k, v = pair.split(b'=', 1)
-                                    key = k.decode()
-                                    val = percent_decode(v).decode('utf-8', 'ignore')
-                                    params[key] = val
+                    if method == b'POST' and path == b'/api/update':
+                        params = parse_request_params(req, query, method)
                         resp = handle_update_file(params)
                         headers = b'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: ' + str(len(resp)).encode() + b'\r\nConnection: close\r\n\r\n'
                         send_small_response(conn_id, headers + resp)
@@ -1199,13 +1166,17 @@ def run():
                         gc.collect()
                         continue
 
-                    if method == b'GET' and path == b'/api/msg_poll':
-                        params = {}
-                        if query:
-                            for pair in query.split(b'&'):
-                                if b'=' in pair:
-                                    k, v = pair.split(b'=', 1)
-                                    params[k.decode()] = v.decode()
+                    if method == b'POST' and path == b'/api/msg_poll':
+                        params = parse_request_params(req, query, method)
+                        session = get_session(params.get('token', ''))
+                        if not session:
+                            err_body = b'{"success":false,"message":"Session expired"}'
+                            err_headers = b'HTTP/1.1 401 Unauthorized\r\nContent-Type: application/json\r\nContent-Length: ' + str(len(err_body)).encode() + b'\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n'
+                            send_small_response(conn_id, err_headers + err_body)
+                            uart.write(b'AT+CIPCLOSE=' + str(conn_id).encode() + b'\r\n')
+                            conn_id = None
+                            gc.collect()
+                            continue
                         since_id = int(params.get('since', '0'))
                         new_msgs = []
                         for m in messages:
@@ -1242,18 +1213,10 @@ def run():
                         gc.collect()
                         continue
 
-                    if method == b'GET' and path == b'/send':
-                        params = {}
-                        if query:
-                            for pair in query.split(b'&'):
-                                if b'=' in pair:
-                                    k, v = pair.split(b'=', 1)
-                                    key = k.decode()
-                                    val = percent_decode(v).decode('utf-8', 'ignore')
-                                    params[key] = val
-                        username = params.get('username', '')
-                        password = params.get('password', '')
-                        ok, _ = login_user(username, password)
+                    if method == b'POST' and path == b'/send':
+                        params = parse_request_params(req, query, method)
+                        session = get_session(params.get('token', ''))
+                        ok = session is not None
                         if not ok:
                             err_resp = b'HTTP/1.1 401 Unauthorized\r\nContent-Type: application/json\r\nConnection: close\r\n\r\n{"success":false,"message":"Auth failed"}'
                             send_small_response(conn_id, err_resp)
@@ -1261,6 +1224,7 @@ def run():
                             conn_id = None
                             gc.collect()
                             continue
+                        username = session[0]
                         if is_muted(username):
                             err_resp = b'HTTP/1.1 403 Forbidden\r\nContent-Type: application/json\r\nConnection: close\r\n\r\n{"success":false,"message":"You are muted"}'
                             send_small_response(conn_id, err_resp)
