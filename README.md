@@ -79,6 +79,35 @@ After startup, check the serial output for Wi-Fi connection status and the devic
 - **Admin functions are unavailable:** set a unique `ADMIN_PASS` before first boot where supported. If the device already has `users.txt`, inspect its existing contents and back it up before changing it.
 - **Sensor values are missing:** confirm that the selected version supports your sensor and that the sensor is connected to the pin configured by `DHT_PIN`.
 
+## Maintainer: retarget the published Release tags
+
+The `release-snapshot/*` branches contain the intended single-version source trees. The existing public tag refs have **not** been moved automatically. After reviewing the snapshots, a maintainer with push access can run the following from a local clone to make each published tag point at its matching snapshot commit. This changes what the existing Release “Source code (zip)” links download.
+
+```sh
+git fetch origin --tags
+
+git tag -f 1.6-stable 65881c6fece0a04574ea74f1ad6f204ad6f9d3fc
+git tag -f 1.7.2 38ba8f4c276a8fa0632f4ee4bcbad8ca234b5f67
+git tag -f 1.8.3 9a372b5aa2e0ed910da35b20da0ba8079f38f895
+git tag -f 1.8.3-lite bb4517203de0c2de23178e93d9e5cec7b4c40b3d
+git tag -f 1.8.4 cc834a76c5ff87bdbef7a8c8203d286f2cc3fa69
+git tag -f 1.9.1 00e7ef2cafd7d072818c0de763c83035aff49038
+git tag -f 1.9.2 9cdcf9e0f59f67d06e9b95c7928d0ccf100cd886
+git tag -f 1.9.3 5fb4d86d340604723869a659f14d0a2c8d75709e
+
+git push --force origin \
+  refs/tags/1.6-stable:refs/tags/1.6-stable \
+  refs/tags/1.7.2:refs/tags/1.7.2 \
+  refs/tags/1.8.3:refs/tags/1.8.3 \
+  refs/tags/1.8.3-lite:refs/tags/1.8.3-lite \
+  refs/tags/1.8.4:refs/tags/1.8.4 \
+  refs/tags/1.9.1:refs/tags/1.9.1 \
+  refs/tags/1.9.2:refs/tags/1.9.2 \
+  refs/tags/1.9.3:refs/tags/1.9.3
+```
+
+Tag retargeting rewrites public references, so confirm the branch names and commit IDs before running the push. Changing a tag does not change the Release's separate prerelease checkbox; review the Release metadata in GitHub if the Stable/Alpha status also needs correction.
+
 ## Version archive
 
 The repository preserves historical implementations rather than making every version identical. For reproducible testing, select one version directory and keep its firmware and companion files together. Version-specific feature lists are documented on each [GitHub Release page](https://github.com/theeskaman/Hive-ChatRoom/releases).
