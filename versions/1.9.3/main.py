@@ -273,14 +273,25 @@ def init_users():
                 if len(parts) != 3 or not parts[0] or parts[2] not in ("admin", "user"):
                     changed = True
                     continue
+                # Remove known weak demo credentials instead of merely hashing them.
+                if (parts[0] == "admin" and parts[1] == "nigga") or (parts[0] == "test" and parts[1] == "test123"):
+                    changed = True
+                    continue
                 if not parts[1].startswith(PASSWORD_PREFIX + "$"):
                     parts[1] = _make_password_hash(parts[1], parts[0])
                     changed = True
                 migrated.append(":".join(parts))
+            has_admin = any(len(item.split(':')) == 3 and item.split(':')[2] == "admin" for item in migrated)
+            if not has_admin and ADMIN_PASS != "CHANGE_ME_TO_A_LONG_UNIQUE_PASSWORD" and len(ADMIN_PASS) >= 12:
+                migrated.append("admin:" + _make_password_hash(ADMIN_PASS, "admin") + ":admin")
+                changed = True
+                has_admin = True
             if changed:
                 with open(USERS_FILE, "w") as f:
                     for line in migrated:
                         f.write(line + "\n")
+            if not has_admin:
+                print("WARNING: no admin account exists; configure a unique ADMIN_PASS of at least 12 characters.")
             return
     except:
         pass
@@ -293,6 +304,8 @@ def init_users():
             print("No default admin or test account was created.")
 
 def register_user(username, password):
+    if not isinstance(username, str) or not isinstance(password, str):
+        return False, "Invalid input"
     username = sanitize_string(username)[:20]
     if not username or len(username) < 2 or ':' in username:
         return False, "Invalid username"
@@ -313,6 +326,8 @@ def register_user(username, password):
     return True, "Registered"
 
 def login_user(username, password):
+    if not isinstance(username, str) or not isinstance(password, str):
+        return False, None
     try:
         with open(USERS_FILE, "r") as f:
             for line in f:
@@ -1058,7 +1073,7 @@ def run():
                     if method == b'POST' and path == b'/api/login':
                         params = parse_request_params(req, query, method)
                         username = params.get('username', '').strip()
-                        password = params.get('password', '').strip()
+                        password = params.get('password', '')
                         ok, role = login_user(username, password)
                         if ok:
                             token = create_session(username, role)
@@ -1075,7 +1090,7 @@ def run():
                     if method == b'POST' and path == b'/api/register':
                         params = parse_request_params(req, query, method)
                         username = params.get('username', '').strip()
-                        password = params.get('password', '').strip()
+                        password = params.get('password', '')
                         if not username or not password:
                             resp = json.dumps({"success": False, "message": "Username and password required"}).encode('utf-8')
                         else:
