@@ -1,8 +1,8 @@
 import machine
 import time
 
-SSID = "Mehrbod"
-PASSWORD = "357913802"
+SSID = "YOUR_WIFI_SSID"
+PASSWORD = "YOUR_WIFI_PASSWORD"
 PORT = 80
 MAX_MSGS = 100
 
