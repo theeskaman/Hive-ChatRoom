@@ -65,9 +65,12 @@ These ZIPs contain only the files for the named release and a short installation
 ## Security and privacy
 
 - The source should contain placeholders, never real Wi-Fi credentials. Change the router password if a previous password was committed publicly: updating current files does not remove it from Git history or old downloaded archives.
-- These are historical MicroPython builds, **not an Internet-hardened service**. Some archived releases use legacy authentication and data handling. Until an exact release has been security-tested, run it only on a trusted isolated local network; do not port-forward it or expose it directly to the public Internet.
-- Versions with `ADMIN_PASS` require a strong, unique value configured before first boot. Do not reuse the Wi-Fi password.
-- Firmware upgrades do not automatically remove device-side files such as `users.txt`, `messages.txt`, or configuration/log files. Back them up and inspect them before replacing firmware or resetting the device.
+- **Security status:** the 1.9.3 Stable source has been updated to hash account passwords with PBKDF2-HMAC-SHA256, migrate legacy user records, remove weak demo accounts, use expiring in-memory session tokens, and keep credentials out of URLs. This has not been tested on the physical Pico/ESP hardware yet.
+- **Versions 1.9.2 and earlier are historical archives and retain legacy authentication patterns.** Do not use them where untrusted devices can access the network; prefer 1.9.3 for evaluation of the maintained security fixes.
+- The firmware still uses plain HTTP and is **not safe for Internet exposure**. Run it only on a trusted, isolated local network; do not port-forward it or expose it directly to the public Internet.
+- Versions with `ADMIN_PASS` require a strong, unique value of at least 12 characters configured before first boot. Never reuse the Wi-Fi password.
+- On first boot, 1.9.3 migrates legacy `users.txt` records to password hashes and removes weak accounts/credentials. Back up `users.txt` and other device-side data before upgrading; weak legacy accounts may need to register again.
+- Firmware upgrades do not automatically remove device-side files such as `messages.txt`, sensor logs, or configuration files. Inspect them before replacing firmware or resetting the device.
 - Review the code and test on the target hardware. Alpha/beta versions are for evaluation.
 
 ## Troubleshooting
@@ -79,7 +82,42 @@ These ZIPs contain only the files for the named release and a short installation
 
 ## Release maintainer note
 
-The published GitHub tag refs were found to point to shared repository snapshots rather than version-specific trees. The `release-snapshot/*` branches are isolated packages, but the existing tags must be retargeted in GitHub before the Releases' built-in “Source code (zip)” archives are fixed. The exact target commits are documented in the commit history; do not move tags without reviewing the release package first.
+The published tag refs currently point to shared repository snapshots. The eight `release-snapshot/*` branches now contain isolated version packages. This connection cannot edit or delete tag refs directly; run the following from a local clone after reviewing the snapshots to make the built-in Release source archives version-specific:
+
+```sh
+git fetch origin --tags
+git tag -f 1.6-stable 65881c6fece0a04574ea74f1ad6f204ad6f9d3fc
+git tag -f 1.7.2 38ba8f4c276a8fa0632f4ee4bcbad8ca234b5f67
+git tag -f 1.8.3 9a372b5aa2e0ed910da35b20da0ba8079f38f895
+git tag -f 1.8.3-lite bb4517203de0c2de23178e93d9e5cec7b4c40b3d
+git tag -f 1.8.4 cc834a76c5ff87bdbef7a8c8203d286f2cc3fa69
+git tag -f 1.9.1 00e7ef2cafd7d072818c0de763c83035aff49038
+git tag -f 1.9.2 9cdcf9e0f59f67d06e9b95c7928d0ccf100cd886
+git tag -f 1.9.3 842569da397b54282888c7cd898b345fc63c36f3
+
+git push --force origin \
+  refs/tags/1.6-stable:refs/tags/1.6-stable \
+  refs/tags/1.7.2:refs/tags/1.7.2 \
+  refs/tags/1.8.3:refs/tags/1.8.3 \
+  refs/tags/1.8.3-lite:refs/tags/1.8.3-lite \
+  refs/tags/1.8.4:refs/tags/1.8.4 \
+  refs/tags/1.9.1:refs/tags/1.9.1 \
+  refs/tags/1.9.2:refs/tags/1.9.2 \
+  refs/tags/1.9.3:refs/tags/1.9.3
+```
+
+This rewrites existing public tags. Confirm the commit IDs first, then change the standalone ZIP links above from `refs/heads/release-snapshot/...` to `refs/tags/...`. Once those tag links work, these already-merged/archive branches are redundant and can be removed to reduce clutter:
+
+```sh
+git push origin --delete \
+  initial-versions \
+  versions-1.6-to-1.7 \
+  security-cleanup-1.1-to-1.5 \
+  security-cleanup-1.6-to-1.7 \
+  security-readme-release-fix
+```
+
+Keep `release-snapshot/*` until you have verified the tags and switched the download links. The source folders under `versions/` on `main` now provide the complete historical source index.
 
 ## License
 
