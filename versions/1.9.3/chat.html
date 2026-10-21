@@ -538,7 +538,9 @@
     }
 
     function escapeHtml(str) {
-        return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : (m === '<' ? '&lt;' : '&gt;'));
+        return String(str).replace(/[&<>"']/g, ch => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[ch]));
     }
 
     // ========== LOGIN / REGISTER (GET) ==========
@@ -547,12 +549,16 @@
         const password = document.getElementById('loginPassword').value.trim();
         if (!username || !password) { showToast('Enter credentials'); return; }
         try {
-            const res = await fetch(`/api/login?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`);
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
             const data = await res.json();
             if (data.success) {
                 currentUser = username;
                 localStorage.setItem('chat_username', username);
-                localStorage.setItem('chat_password', password);
+                sessionStorage.setItem('chat_token', data.token);
                 document.getElementById('loginOverlay').style.display = 'none';
                 document.getElementById('appMain').style.display = 'flex';
                 initApp();
@@ -567,10 +573,14 @@
     async function showRegister() {
         const u = prompt('New username (min 2 chars):');
         if (!u) return;
-        const p = prompt('Password (min 4 chars):');
+        const p = prompt('Password (minimum 12 characters):');
         if (!p) return;
         try {
-            const res = await fetch(`/api/register?username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}`);
+            const res = await fetch('/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: u, password: p })
+            });
             const data = await res.json();
             if (data.success) {
                 showToast('Registered! You can now login.');
@@ -584,6 +594,7 @@
 
     function logout() {
         localStorage.removeItem('chat_username');
+        sessionStorage.removeItem('chat_token');
         localStorage.removeItem('chat_password');
         currentUser = '';
         document.getElementById('loginOverlay').style.display = 'flex';
@@ -598,7 +609,7 @@
             const data = await res.json();
             if (data.success && data.news) {
                 const newsDiv = document.getElementById('newsContent');
-                const formatted = data.news.replace(/\n/g, '<br>');
+                const formatted = escapeHtml(data.news).replace(/\n/g, '<br>');
                 newsDiv.innerHTML = formatted;
                 document.getElementById('newsTime').innerText = new Date().toLocaleTimeString();
             } else {
@@ -616,15 +627,18 @@
         if (!msg) { showToast('Message cannot be empty'); return; }
         if (msg.length > 400) { showToast('Message too long'); return; }
         let reply = currentReplyTo;
-        let password = localStorage.getItem('chat_password');
-        if (!password) { logout(); return; }
+        let token = sessionStorage.getItem('chat_token');
+        if (!token) { logout(); return; }
         sending = true;
         let btn = document.getElementById('sendBtn');
         btn.disabled = true;
         btn.textContent = '⏳';
         try {
-            const url = `/send?username=${encodeURIComponent(currentUser)}&password=${encodeURIComponent(password)}&msg=${encodeURIComponent(msg)}&reply=${reply}`;
-            const res = await fetch(url);
+            const res = await fetch('/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token, msg, reply })
+            });
             const data = await res.json();
             if (data.success) {
                 document.getElementById('msg_input').value = '';
@@ -649,7 +663,13 @@
     async function pollMessages() {
         if (!currentUser) return;
         try {
-            const r = await fetch(`/api/msg_poll?since=${lastMsgId}`);
+            const token = sessionStorage.getItem('chat_token');
+            if (!token) { logout(); return; }
+            const r = await fetch('/api/msg_poll', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token, since: lastMsgId })
+            });
             const d = await r.json();
             if (d.messages?.length) {
                 for (let msg of d.messages) appendMessage(msg);
@@ -680,11 +700,14 @@
     // ========== REACTION ==========
     async function sendReaction(msgId, emoji) {
         const username = currentUser;
-        const password = localStorage.getItem('chat_password');
-        if (!username || !password) return;
+        const token = sessionStorage.getItem('chat_token');
+        if (!username || !token) return;
         try {
-            const url = `/api/reaction?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&msg_id=${msgId}&emoji=${encodeURIComponent(emoji)}`;
-            const res = await fetch(url);
+            const res = await fetch('/api/reaction', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token, msg_id: msgId, emoji })
+            });
             const data = await res.json();
             if (data.success && data.reactions) {
                 updateMessageReactions(msgId, data.reactions);
@@ -860,9 +883,13 @@
             sendMessage();
         });
         document.getElementById('unpinBtn').addEventListener('click', async () => {
-            const password = localStorage.getItem('chat_password');
-            if (!password) return;
-            await fetch(`/api/admin?username=${encodeURIComponent(currentUser)}&password=${encodeURIComponent(password)}&cmd=unpin`);
+            const token = sessionStorage.getItem('chat_token');
+            if (!token) { logout(); return; }
+            await fetch('/api/admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token, cmd: 'unpin' })
+            });
             pollMessages();
         });
     }
@@ -872,8 +899,9 @@
         fetchNews();
         setInterval(fetchNews, 30000);
         const savedUser = localStorage.getItem('chat_username');
-        const savedPass = localStorage.getItem('chat_password');
-        if (savedUser && savedPass) {
+        const savedToken = sessionStorage.getItem('chat_token');
+        localStorage.removeItem('chat_password');
+        if (savedUser && savedToken) {
             currentUser = savedUser;
             document.getElementById('loginOverlay').style.display = 'none';
             document.getElementById('appMain').style.display = 'flex';
