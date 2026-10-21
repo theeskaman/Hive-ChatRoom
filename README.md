@@ -26,7 +26,7 @@ For the eight published releases:
 
 | Release | Exact source file(s) |
 | --- | --- |
-| **1.6 Stable** | [main.py](https://raw.githubusercontent.com/theeskaman/Hive-ChatRoom/security-cleanup-1.1-to-1.5/versions/1.6-stable/main.py) |
+| **1.6 Stable** | [main.py](https://raw.githubusercontent.com/theeskaman/Hive-ChatRoom/security-cleanup-1.6-to-1.7/versions/1.6-stable/main.py) |
 | **1.7.2** | [main.py](https://raw.githubusercontent.com/theeskaman/Hive-ChatRoom/security-cleanup-1.6-to-1.7/versions/1.7.2/main.py) |
 | **1.8.3** | [Standard main.py](https://raw.githubusercontent.com/theeskaman/Hive-ChatRoom/security-readme-release-fix/versions/1.8.3/main.py) |
 | **1.8.3 Lite** | [main_lite.py](https://raw.githubusercontent.com/theeskaman/Hive-ChatRoom/security-readme-release-fix/versions/1.8.3/main_lite.py) |
