@@ -1015,7 +1015,7 @@ def run():
                         query = full_path.split(b'?', 1)[1]
 
                     # Maintenance mode whitelist (no change)
-                    if is_maintenance_mode() and path not in [b'/api/stats', b'/update', b'/api/login', b'/api/register', b'/maintenance.html', b'/api/list_files', b'/api/delete_file', b'/api/update', b'/api/get_reactions', b'/api/reaction', b'/api/admin', b'/api/msg_poll', b'/api/news'] and not (method == b'GET' and path == b'/'):
+                    if is_maintenance_mode() and path not in [b'/api/stats', b'/update', b'/api/login', b'/api/register', b'/maintenance.html', b'/api/list_files', b'/api/delete_file', b'/api/update', b'/api/get_reactions', b'/api/reaction', b'/api/admin', b'/api/msg_poll', b'/api/news', b'/api/logout'] and not (method == b'GET' and path == b'/'):
                         err_resp = b'HTTP/1.1 503 Service Unavailable\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n<html><body><h1>Maintenance Mode</h1></body></html>'
                         send_small_response(conn_id, err_resp)
                         uart.write(b'AT+CIPCLOSE=' + str(conn_id).encode() + b'\r\n')
@@ -1076,7 +1076,7 @@ def run():
                             resp = json.dumps({"success": True, "username": username, "role": role, "token": token}).encode('utf-8')
                         else:
                             resp = json.dumps({"success": False, "message": "Invalid credentials"}).encode('utf-8')
-                        headers = b'HTTP/1.1 200 OK\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: ' + str(len(resp)).encode() + b'\r\nConnection: close\r\n\r\n'
+                        headers = b'HTTP/1.1 200 OK\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: ' + str(len(resp)).encode() + b'\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n'
                         send_small_response(conn_id, headers + resp)
                         uart.write(b'AT+CIPCLOSE=' + str(conn_id).encode() + b'\r\n')
                         conn_id = None
