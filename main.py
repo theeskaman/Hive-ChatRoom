@@ -274,10 +274,13 @@ def init_users():
                     changed = True
                     continue
                 # Remove known weak demo credentials instead of merely hashing them.
-                if parts[0] == "test" or (parts[0] == "admin" and len(parts[1]) < 12):
+                if parts[0] == "test":
                     changed = True
                     continue
                 if not parts[1].startswith(PASSWORD_PREFIX + "$"):
+                    if len(parts[1]) < 12:
+                        changed = True
+                        continue
                     parts[1] = _make_password_hash(parts[1], parts[0])
                     changed = True
                 migrated.append(":".join(parts))
