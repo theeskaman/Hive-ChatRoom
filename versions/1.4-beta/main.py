@@ -3,8 +3,8 @@ import time
 import os
 
 # ========== تنظیمات ==========
-SSID = "Mehrbod"
-PASSWORD = "357913802"
+SSID = "YOUR_WIFI_SSID"
+PASSWORD = "YOUR_WIFI_PASSWORD"
 PORT = 80
 MAX_MSGS = 100
 DISPLAY_MSGS = 20   # کاهش تعداد برای ایمنی بافر
