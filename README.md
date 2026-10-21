@@ -1,117 +1,86 @@
 # Hive-ChatRoom
 
-A local-network chat room for a Raspberry Pi Pico connected to an ESP-01S Wi-Fi module. Depending on the version, it includes message history, replies, notifications, a browser chat interface, sensor/status information, user accounts, reactions, pinning, maintenance mode, or update tools.
+A local-network chat server for a Raspberry Pi Pico with an ESP-01S/ESP8266 Wi-Fi module. The repository preserves historical firmware versions; features and hardware details vary by version.
 
-> **Important release-download note (checked 2026-10-21):** the eight published Releases do not currently point to eight independent version snapshots. The tags `1.6-stable` and `1.7.2` point to the same commit, and the tags `1.8.3`, `1.8.3-lite`, `1.8.4`, `1.9.1`, `1.9.2`, and `1.9.3` point to another shared commit. Each Release also has no uploaded release-specific assets. Dedicated `release-snapshot/*` branches have been prepared with only the files for each release. The published tag refs themselves still need to be recreated against those snapshots in GitHub; until that final tag operation is done, **use the exact version-file links below instead of relying on a Release's “Source code (zip)” archive to obtain only one version**. A source archive represents the full repository tree at its tag, not a curated one-version package.
+## Quick start
 
-## Getting Started
+1. Choose **one** version from the version index below. Do not mix `main.py`, HTML files, or support files from different versions.
+2. Read the short README inside the chosen version folder (where provided) and inspect its pin/UART constants before wiring hardware.
+3. Open that version's `main.py` and configure `YOUR_WIFI_SSID` and `YOUR_WIFI_PASSWORD`. If the version defines `ADMIN_PASS`, replace `CHANGE_ME_TO_A_LONG_UNIQUE_PASSWORD` with a strong, unique secret before first boot.
+4. Copy `main.py` to the Pico as `/main.py`. Copy only the companion files listed for that exact version, preserving their names.
+5. Restart the Pico, read the serial console for connection status and the device's local IP address, then open `http://DEVICE_IP/` from a device on the same local network.
 
-### 1. Hardware and prerequisites
+### Hardware checklist
 
-You need:
+- Raspberry Pi Pico with compatible MicroPython firmware.
+- ESP-01S/ESP8266 with working AT-command firmware and 3.3 V-compatible UART wiring.
+- Stable regulated 3.3 V power for the ESP module, crossed UART TX/RX lines, and a shared ground.
+- DHT sensor only for versions/configurations that support it.
 
-- A Raspberry Pi Pico running a compatible MicroPython firmware.
-- An ESP-01S / ESP8266 module with working AT-command firmware.
-- A regulated, stable 3.3 V supply suitable for the ESP-01S, appropriate UART wiring, and a shared ground.
-- A USB data cable and a computer with a MicroPython file-transfer tool such as Thonny.
-- A DHT sensor only if you plan to use a version and wiring that supports it.
+**Never connect 5 V to ESP-01S power or signal pins.** UART pins, sensor pin numbers, and companion files differ across versions; verify the selected source before connecting hardware.
 
-Connect the Pico and ESP-01S UART TX/RX lines to the pins expected by the selected version, crossing TX to RX, and connect their grounds. **Do not apply 5 V to ESP-01S power or signal pins.** Pin assignments, UART settings, and sensor support can differ between versions; check the constants and UART setup in that version's `main.py` before wiring the hardware. Do not assume that a wiring diagram or settings for one version apply to every other version.
+## Version index
 
-### 2. Choose and download one version
+All historical firmware folders are kept under `versions/` using one consistent layout.
 
-Open the file link in the version table below and use the browser's download/save option. The older version files live on archive branches; versions 1.8 and later live under `versions/`. Keep all files from the same version together and do not combine `main.py` or HTML files from different versions.
+| Version | Contents / status | Browse source |
+| --- | --- | --- |
+| 1.1 | Legacy firmware | [versions/1.1](versions/1.1/) |
+| 1.2 | Legacy firmware | [versions/1.2](versions/1.2/) |
+| 1.3 | Legacy firmware | [versions/1.3](versions/1.3/) |
+| 1.3.1 | Legacy firmware | [versions/1.3.1](versions/1.3.1/) |
+| 1.4-alpha | Alpha archive | [versions/1.4-alpha](versions/1.4-alpha/) |
+| 1.4-beta | Beta archive | [versions/1.4-beta](versions/1.4-beta/) |
+| 1.4-m-beta | Beta archive | [versions/1.4-m-beta](versions/1.4-m-beta/) |
+| 1.5-alpha | Alpha archive | [versions/1.5-alpha](versions/1.5-alpha/) |
+| 1.6-beta | Beta archive | [versions/1.6-beta](versions/1.6-beta/) |
+| 1.6-stable | Historical stable | [versions/1.6-stable](versions/1.6-stable/) |
+| 1.7 | Legacy firmware | [versions/1.7](versions/1.7/) |
+| 1.7.1 | Legacy firmware | [versions/1.7.1](versions/1.7.1/) |
+| 1.7.2 | Legacy firmware | [versions/1.7.2](versions/1.7.2/) |
+| 1.8-beta | Beta archive | [versions/1.8-beta](versions/1.8-beta/) |
+| 1.8.1 | Legacy firmware | [versions/1.8.1](versions/1.8.1/) |
+| 1.8.2 | Legacy firmware | [versions/1.8.2](versions/1.8.2/) |
+| 1.8.3 | Standard + Lite | [versions/1.8.3](versions/1.8.3/) |
+| 1.8.4 Alpha | Alternate server and UIs | [versions/1.8.4](versions/1.8.4/) |
+| 1.9.1 | Historical firmware | [versions/1.9.1](versions/1.9.1/) |
+| 1.9.2 Alpha | Historical Alpha | [versions/1.9.2](versions/1.9.2/) |
+| 1.9.3 Stable | Latest archived release | [versions/1.9.3](versions/1.9.3/) |
 
-For the eight published releases:
+### Standalone release downloads
 
-| Release | Exact source file(s) |
+These ZIPs contain only the files for the named release and a short installation note:
+
+| Release | Package |
 | --- | --- |
-| **1.6 Stable** | [Download ZIP](https://github.com/theeskaman/Hive-ChatRoom/archive/refs/heads/release-snapshot/1.6-stable.zip) · [main.py](https://raw.githubusercontent.com/theeskaman/Hive-ChatRoom/release-snapshot/1.6-stable/main.py) |
-| **1.7.2** | [Download ZIP](https://github.com/theeskaman/Hive-ChatRoom/archive/refs/heads/release-snapshot/1.7.2.zip) · [main.py](https://raw.githubusercontent.com/theeskaman/Hive-ChatRoom/release-snapshot/1.7.2/main.py) |
-| **1.8.3** | [Download ZIP](https://github.com/theeskaman/Hive-ChatRoom/archive/refs/heads/release-snapshot/1.8.3.zip) · [Standard main.py](https://raw.githubusercontent.com/theeskaman/Hive-ChatRoom/release-snapshot/1.8.3/main.py) |
-| **1.8.3 Lite** | [Download ZIP](https://github.com/theeskaman/Hive-ChatRoom/archive/refs/heads/release-snapshot/1.8.3-lite.zip) · [main.py (Lite build)](https://raw.githubusercontent.com/theeskaman/Hive-ChatRoom/release-snapshot/1.8.3-lite/main.py) |
-| **1.8.4 Alpha** | [Download ZIP](https://github.com/theeskaman/Hive-ChatRoom/archive/refs/heads/release-snapshot/1.8.4.zip) · [main.py](https://raw.githubusercontent.com/theeskaman/Hive-ChatRoom/release-snapshot/1.8.4/main.py), [server_alternative.py](https://raw.githubusercontent.com/theeskaman/Hive-ChatRoom/release-snapshot/1.8.4/server_alternative.py), [chat.html](https://raw.githubusercontent.com/theeskaman/Hive-ChatRoom/release-snapshot/1.8.4/chat.html), [chat-alternative.html](https://raw.githubusercontent.com/theeskaman/Hive-ChatRoom/release-snapshot/1.8.4/chat-alternative.html) |
-| **1.9.1** | [Download ZIP](https://github.com/theeskaman/Hive-ChatRoom/archive/refs/heads/release-snapshot/1.9.1.zip) · [main.py](https://raw.githubusercontent.com/theeskaman/Hive-ChatRoom/release-snapshot/1.9.1/main.py), [chat.html](https://raw.githubusercontent.com/theeskaman/Hive-ChatRoom/release-snapshot/1.9.1/chat.html), [maintenance.html](https://raw.githubusercontent.com/theeskaman/Hive-ChatRoom/release-snapshot/1.9.1/maintenance.html), [update.html](https://raw.githubusercontent.com/theeskaman/Hive-ChatRoom/release-snapshot/1.9.1/update.html) |
-| **1.9.2 Alpha** | [Download ZIP](https://github.com/theeskaman/Hive-ChatRoom/archive/refs/heads/release-snapshot/1.9.2.zip) · [main.py](https://raw.githubusercontent.com/theeskaman/Hive-ChatRoom/release-snapshot/1.9.2/main.py), [chat.html](https://raw.githubusercontent.com/theeskaman/Hive-ChatRoom/release-snapshot/1.9.2/chat.html), [maintenance.html](https://raw.githubusercontent.com/theeskaman/Hive-ChatRoom/release-snapshot/1.9.2/maintenance.html), [update.html](https://raw.githubusercontent.com/theeskaman/Hive-ChatRoom/release-snapshot/1.9.2/update.html) |
-| **1.9.3 Stable** | [Download ZIP](https://github.com/theeskaman/Hive-ChatRoom/archive/refs/heads/release-snapshot/1.9.3.zip) · [main.py](https://raw.githubusercontent.com/theeskaman/Hive-ChatRoom/release-snapshot/1.9.3/main.py), [chat.html](https://raw.githubusercontent.com/theeskaman/Hive-ChatRoom/release-snapshot/1.9.3/chat.html), [maintenance.html](https://raw.githubusercontent.com/theeskaman/Hive-ChatRoom/release-snapshot/1.9.3/maintenance.html), [update.html](https://raw.githubusercontent.com/theeskaman/Hive-ChatRoom/release-snapshot/1.9.3/update.html), [news.txt](https://raw.githubusercontent.com/theeskaman/Hive-ChatRoom/release-snapshot/1.9.3/news.txt) |
+| 1.6 Stable | [Download ZIP](https://github.com/theeskaman/Hive-ChatRoom/archive/refs/heads/release-snapshot/1.6-stable.zip) |
+| 1.7.2 | [Download ZIP](https://github.com/theeskaman/Hive-ChatRoom/archive/refs/heads/release-snapshot/1.7.2.zip) |
+| 1.8.3 | [Download ZIP](https://github.com/theeskaman/Hive-ChatRoom/archive/refs/heads/release-snapshot/1.8.3.zip) |
+| 1.8.3 Lite | [Download ZIP](https://github.com/theeskaman/Hive-ChatRoom/archive/refs/heads/release-snapshot/1.8.3-lite.zip) |
+| 1.8.4 Alpha | [Download ZIP](https://github.com/theeskaman/Hive-ChatRoom/archive/refs/heads/release-snapshot/1.8.4.zip) |
+| 1.9.1 | [Download ZIP](https://github.com/theeskaman/Hive-ChatRoom/archive/refs/heads/release-snapshot/1.9.1.zip) |
+| 1.9.2 Alpha | [Download ZIP](https://github.com/theeskaman/Hive-ChatRoom/archive/refs/heads/release-snapshot/1.9.2.zip) |
+| 1.9.3 Stable | [Download ZIP](https://github.com/theeskaman/Hive-ChatRoom/archive/refs/heads/release-snapshot/1.9.3.zip) |
 
-Other archived versions are available here: [versions 1.1–1.5](https://github.com/theeskaman/Hive-ChatRoom/tree/security-cleanup-1.1-to-1.5/versions) · [versions 1.6–1.7.2](https://github.com/theeskaman/Hive-ChatRoom/tree/security-cleanup-1.6-to-1.7/versions) · [versions 1.8 and later](https://github.com/theeskaman/Hive-ChatRoom/tree/security-readme-release-fix/versions).
+## Security and privacy
 
-### 3. Configure Wi-Fi and administrator access before running
+- The source should contain placeholders, never real Wi-Fi credentials. Change the router password if a previous password was committed publicly: updating current files does not remove it from Git history or old downloaded archives.
+- These are historical MicroPython builds, **not an Internet-hardened service**. Some archived releases use legacy authentication and data handling. Until an exact release has been security-tested, run it only on a trusted isolated local network; do not port-forward it or expose it directly to the public Internet.
+- Versions with `ADMIN_PASS` require a strong, unique value configured before first boot. Do not reuse the Wi-Fi password.
+- Firmware upgrades do not automatically remove device-side files such as `users.txt`, `messages.txt`, or configuration/log files. Back them up and inspect them before replacing firmware or resetting the device.
+- Review the code and test on the target hardware. Alpha/beta versions are for evaluation.
 
-Open the downloaded version's `main.py` in a text editor and find the Wi-Fi constants near the top. Replace the placeholders with the credentials for the 2.4 GHz network that the ESP-01S should join:
+## Troubleshooting
 
-- `SSID = "YOUR_WIFI_SSID"` — the exact Wi-Fi network name.
-- `PASSWORD = "YOUR_WIFI_PASSWORD"` — that network's password.
+- **Wi-Fi does not connect:** check the 2.4 GHz network name/password, ESP-01S 3.3 V supply, TX/RX crossover, shared ground, and the UART pins/baud rate expected by the selected source.
+- **The page does not open:** confirm the serial console reports a Wi-Fi IP address, then use that IP from a device on the same LAN.
+- **Pages/assets are missing:** copy all and only companion files belonging to the selected version, preserving names and paths.
+- **Sensor readings are unavailable:** confirm that the version supports the sensor and that it is connected to the configured pin.
 
-Do not upload or commit a copy containing your real Wi-Fi password to a public repository. These source files are intended to contain placeholders, not personal network credentials.
+## Release maintainer note
 
-Versions that define `ADMIN_PASS` use the placeholder `CHANGE_ME_TO_A_LONG_UNIQUE_PASSWORD`. Replace it with a strong, unique password before deployment. In the updated 1.8.x versions, admin-only actions are disabled while this placeholder remains. In 1.9.1–1.9.3, no default `admin/nigga` or `test/test123` account is created; configure `ADMIN_PASS` before the first boot if you need admin access. If the device already has a `users.txt` file from an older run, back it up and inspect it before reusing it: updating the source file does not erase old accounts or passwords stored on the device.
-
-### 4. Copy files to the Pico
-
-1. Connect the Pico over USB and open it in Thonny (or another MicroPython file-transfer tool).
-2. Make a backup of any existing `main.py`, chat history, configuration, and user-data files before replacing them.
-3. Copy the selected version's firmware onto the Pico as `/main.py`.
-4. For **1.8.3 Lite**, copy `main_lite.py` and rename it to `main.py` on the device. Do not run the standard and Lite entry points separately.
-5. For versions with companion HTML/text files, copy the files listed for that version to the device filesystem with their names unchanged. Use the HTML variant intended for the selected firmware. Do not install `server_alternative.py` as a second boot program; it is an alternative implementation for deliberate testing.
-6. Save the files, restart the Pico, and open the serial console to review startup messages.
-
-The exact assets vary by version. Versions 1.8.3 and earlier may embed more of the web UI inside `main.py`; 1.8.4 and 1.9.x have additional UI/support files listed above. Use the selected version's own set.
-
-### 5. Connect from a browser
-
-After startup, check the serial output for Wi-Fi connection status and the device's local IP address. From a phone or computer on the **same local network**, open `http://DEVICE_IP/`, replacing `DEVICE_IP` with the address reported by the device. Port 80 is used by the versions documented here unless the selected source says otherwise.
-
-### 6. Security and privacy checklist
-
-- The original source contained a personal Wi-Fi SSID/password and weak hard-coded administrator passwords. This cleanup replaces those source literals with placeholders, but **it cannot revoke a password that has already appeared in repository history or old published Release archives**. Change the exposed Wi-Fi password on your router/access point now, and update any device using the old password.
-- Never expose this service directly to the public Internet or forward its port from your router. Treat it as a local-network project, not an Internet-hardened chat service.
-- Some historical versions store credentials or application data in plain-text files on the device. Restrict physical access to the Pico and back up files before deleting or replacing them. Do not assume an upgrade automatically migrates or securely erases existing user data.
-- Use a unique admin password. Do not reuse your Wi-Fi password, personal password, or a password used by another service.
-- Review the code and test it on the exact hardware before relying on it. Alpha releases (including 1.8.4 and 1.9.2) are intended for evaluation.
-
-### 7. Troubleshooting
-
-- **Wi-Fi will not connect:** check the 2.4 GHz SSID/password spelling, stable 3.3 V power for the ESP-01S, TX/RX wiring, common ground, and the UART pins/baud rate expected by the selected source.
-- **The browser cannot open the page:** verify that the serial console reports a connected Wi-Fi network and an IP address, then use that IP from a device on the same LAN.
-- **UI elements or pages are missing:** make sure every companion file came from the same version and is saved under the expected name/path.
-- **Admin functions are unavailable:** set a unique `ADMIN_PASS` before first boot where supported. If the device already has `users.txt`, inspect its existing contents and back it up before changing it.
-- **Sensor values are missing:** confirm that the selected version supports your sensor and that the sensor is connected to the pin configured by `DHT_PIN`.
-
-## Maintainer: retarget the published Release tags
-
-The `release-snapshot/*` branches contain the intended single-version source trees. The existing public tag refs have **not** been moved automatically. After reviewing the snapshots, a maintainer with push access can run the following from a local clone to make each published tag point at its matching snapshot commit. This changes what the existing Release “Source code (zip)” links download.
-
-```sh
-git fetch origin --tags
-
-git tag -f 1.6-stable 65881c6fece0a04574ea74f1ad6f204ad6f9d3fc
-git tag -f 1.7.2 38ba8f4c276a8fa0632f4ee4bcbad8ca234b5f67
-git tag -f 1.8.3 9a372b5aa2e0ed910da35b20da0ba8079f38f895
-git tag -f 1.8.3-lite bb4517203de0c2de23178e93d9e5cec7b4c40b3d
-git tag -f 1.8.4 cc834a76c5ff87bdbef7a8c8203d286f2cc3fa69
-git tag -f 1.9.1 00e7ef2cafd7d072818c0de763c83035aff49038
-git tag -f 1.9.2 9cdcf9e0f59f67d06e9b95c7928d0ccf100cd886
-git tag -f 1.9.3 5fb4d86d340604723869a659f14d0a2c8d75709e
-
-git push --force origin \
-  refs/tags/1.6-stable:refs/tags/1.6-stable \
-  refs/tags/1.7.2:refs/tags/1.7.2 \
-  refs/tags/1.8.3:refs/tags/1.8.3 \
-  refs/tags/1.8.3-lite:refs/tags/1.8.3-lite \
-  refs/tags/1.8.4:refs/tags/1.8.4 \
-  refs/tags/1.9.1:refs/tags/1.9.1 \
-  refs/tags/1.9.2:refs/tags/1.9.2 \
-  refs/tags/1.9.3:refs/tags/1.9.3
-```
-
-Tag retargeting rewrites public references, so confirm the branch names and commit IDs before running the push. Changing a tag does not change the Release's separate prerelease checkbox; review the Release metadata in GitHub if the Stable/Alpha status also needs correction.
-
-## Version archive
-
-The repository preserves historical implementations rather than making every version identical. For reproducible testing, select one version directory and keep its firmware and companion files together. Version-specific feature lists are documented on each [GitHub Release page](https://github.com/theeskaman/Hive-ChatRoom/releases).
+The published GitHub tag refs were found to point to shared repository snapshots rather than version-specific trees. The `release-snapshot/*` branches are isolated packages, but the existing tags must be retargeted in GitHub before the Releases' built-in “Source code (zip)” archives are fixed. The exact target commits are documented in the commit history; do not move tags without reviewing the release package first.
 
 ## License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
