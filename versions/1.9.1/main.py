@@ -8,11 +8,11 @@ import sys
 import ubinascii
 
 # ============================== تنظیمات اصلی ==============================
-SSID = "Mehrbod"
-PASSWORD = "357913802"
+SSID = "YOUR_WIFI_SSID"
+PASSWORD = "YOUR_WIFI_PASSWORD"
 PORT = 80
 MAX_MSGS = 5000
-ADMIN_PASS = "nigga"
+ADMIN_PASS = "CHANGE_ME_TO_A_LONG_UNIQUE_PASSWORD"
 DHT_PIN = 0
 MAX_MSG_CHARS = 400
 VERSION = "1.9.1"
@@ -97,9 +97,11 @@ def init_users():
     except:
         pass
     with open(USERS_FILE, "w") as f:
-        f.write("admin:nigga:admin\n")
-        f.write("test:test123:user\n")
-    print("Default users created: admin/nigga , test/test123")
+        if ADMIN_PASS != "CHANGE_ME_TO_A_LONG_UNIQUE_PASSWORD":
+            f.write("admin:" + ADMIN_PASS + ":admin\n")
+        else:
+            print("WARNING: ADMIN_PASS is still a placeholder; no admin account was created.")
+    print("User database initialized; configure ADMIN_PASS before first boot for admin access.")
 
 def register_user(username, password):
     username = sanitize_string(username)[:20]
@@ -541,7 +543,7 @@ def handle_list_files():
 def handle_delete_file(post_data):
     try:
         data = json.loads(post_data.decode())
-        if data.get('password') != ADMIN_PASS:
+        if ADMIN_PASS == "CHANGE_ME_TO_A_LONG_UNIQUE_PASSWORD" or data.get("password") != ADMIN_PASS:
             return json.dumps({"success": False, "message": "Invalid password"}).encode()
         filename = data.get('filename', '')
         if not filename:
@@ -560,7 +562,7 @@ def handle_delete_file(post_data):
 def handle_update_file(post_data):
     try:
         data = json.loads(post_data.decode())
-        if data.get('password') != ADMIN_PASS:
+        if ADMIN_PASS == "CHANGE_ME_TO_A_LONG_UNIQUE_PASSWORD" or data.get("password") != ADMIN_PASS:
             return json.dumps({"success": False, "message": "Invalid password"}).encode()
         filename = data.get('filename', '')
         if not filename.endswith('.html'):

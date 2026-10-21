@@ -6,13 +6,13 @@ import dht
 import json
 import sys
 
-SSID = "Mehrbod"
-PASSWORD = "357913802"
+SSID = "YOUR_WIFI_SSID"
+PASSWORD = "YOUR_WIFI_PASSWORD"
 PORT = 80
 MAX_MSGS = 2000
 DISPLAY_MSGS = 30
 MIN_FREE_MEM = 40000
-ADMIN_PASS = "nigga"
+ADMIN_PASS = "CHANGE_ME_TO_A_LONG_UNIQUE_PASSWORD"
 
 DHT_PIN = 0
 
@@ -381,7 +381,7 @@ def handle_admin_command(username, text):
         temp, hum, uptime, cnt = get_system_stats()
         free = gc.mem_free()
         return True, ("System", f"Temp:{temp} Hum:{hum} Up:{uptime} Msgs:{cnt} FreeMem:{free}")
-    if not args or args[0] != ADMIN_PASS:
+    if ADMIN_PASS == "CHANGE_ME_TO_A_LONG_UNIQUE_PASSWORD" or not args or args[0] != ADMIN_PASS:
         return True, ("System", "Admin command denied. Wrong or missing password.")
     if cmd == "restart":
         add_message("System", "Admin restart requested. Restarting in 2 seconds...")
@@ -665,7 +665,7 @@ while True:
                                 k, v = pair.split(b'=', 1)
                                 params[k.decode()] = v.decode()
                     user_pass = params.get('pass', '')
-                    if user_pass == 'admin':
+                    if ADMIN_PASS != "CHANGE_ME_TO_A_LONG_UNIQUE_PASSWORD" and user_pass == ADMIN_PASS:
                         try:
                             os.remove("messages.txt")
                         except:

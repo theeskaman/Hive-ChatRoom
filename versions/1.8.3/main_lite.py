@@ -7,13 +7,13 @@ import json
 import sys
 
 # ========== CONFIG ==========
-SSID = "Mehrbod"
-PASSWORD = "357913802"
+SSID = "YOUR_WIFI_SSID"
+PASSWORD = "YOUR_WIFI_PASSWORD"
 PORT = 80
 MAX_MSGS = 2000
 DISPLAY_MSGS = 30
 MIN_FREE_MEM = 40000
-ADMIN_PASS = "nigga"
+ADMIN_PASS = "CHANGE_ME_TO_A_LONG_UNIQUE_PASSWORD"
 DHT_PIN = 0
 MAX_MSG_CHARS = 400
 
@@ -378,7 +378,7 @@ def handle_admin(username, text):
     if cmd == "info":
         t,h,u,c = get_system_stats()
         return True, ("System", f"Temp:{t} Hum:{h} Up:{u} Msgs:{c} Mem:{gc.mem_free()}")
-    if not args or args[0] != ADMIN_PASS:
+    if ADMIN_PASS == "CHANGE_ME_TO_A_LONG_UNIQUE_PASSWORD" or not args or args[0] != ADMIN_PASS:
         return True, ("System", "Admin password required")
     if cmd == "restart":
         add_message("System", "Restarting...")
@@ -549,7 +549,7 @@ while True:
                     for pair in query.split(b'&'):
                         if pair.startswith(b'pass='):
                             pwd = pair.split(b'=')[1]
-                    if pwd.decode() == ADMIN_PASS:
+                    if ADMIN_PASS != "CHANGE_ME_TO_A_LONG_UNIQUE_PASSWORD" and pwd.decode() == ADMIN_PASS:
                         try: os.remove("messages.txt")
                         except: pass
                         messages.clear()

@@ -8,13 +8,13 @@ import sys
 import ubinascii
 
 # ============================== تنظیمات اصلی ==============================
-SSID = "Mehrbod"
-PASSWORD = "357913802"
+SSID = "YOUR_WIFI_SSID"
+PASSWORD = "YOUR_WIFI_PASSWORD"
 PORT = 80
 MAX_MSGS = 5000
 DISPLAY_MSGS = 30
 MIN_FREE_MEM = 45000
-ADMIN_PASS = "nigga"
+ADMIN_PASS = "CHANGE_ME_TO_A_LONG_UNIQUE_PASSWORD"
 CHUNK_SIZE = 4096
 
 DHT_PIN = 0
@@ -515,7 +515,7 @@ def handle_upload_chunk(post_data):
     try:
         data = json.loads(post_data.decode('utf-8'))
         password = data.get('password', '')
-        if password != ADMIN_PASS:
+        if ADMIN_PASS == "CHANGE_ME_TO_A_LONG_UNIQUE_PASSWORD" or password != ADMIN_PASS:
             return json.dumps({"success": False, "message": "Invalid password"}).encode()
         filename = data.get('filename', '')
         if not filename.endswith('.py'):
@@ -609,7 +609,7 @@ def handle_admin_command(username, text):
     if cmd == "ping":
         return True, ("System", "Pong! System is alive.")
     if cmd == "pin" and len(args) >= 1:
-        if len(args) < 2 or args[1] != ADMIN_PASS:
+        if ADMIN_PASS == "CHANGE_ME_TO_A_LONG_UNIQUE_PASSWORD" or len(args) < 2 or args[1] != ADMIN_PASS:
             return True, ("System", "Pin command requires admin password: admin: pin <id> <password>")
         try:
             pin_id = int(args[0])
@@ -621,11 +621,11 @@ def handle_admin_command(username, text):
         except ValueError:
             return True, ("System", "Invalid ID format")
     if cmd == "unpin":
-        if len(args) < 1 or args[0] != ADMIN_PASS:
+        if ADMIN_PASS == "CHANGE_ME_TO_A_LONG_UNIQUE_PASSWORD" or len(args) < 1 or args[0] != ADMIN_PASS:
             return True, ("System", "Unpin requires admin password: admin: unpin <password>")
         save_pinned(0)
         return True, ("System", "Pinned message removed")
-    if not args or args[0] != ADMIN_PASS:
+    if ADMIN_PASS == "CHANGE_ME_TO_A_LONG_UNIQUE_PASSWORD" or not args or args[0] != ADMIN_PASS:
         return True, ("System", "Admin command denied. Wrong or missing password.")
     if cmd == "restart":
         add_message("System", "Admin restart requested. Restarting in 2 seconds...")
@@ -1018,7 +1018,7 @@ while True:
                                 k, v = pair.split(b'=', 1)
                                 params[k.decode()] = v.decode()
                     user_pass = params.get('pass', '')
-                    if user_pass == ADMIN_PASS:
+                    if ADMIN_PASS != "CHANGE_ME_TO_A_LONG_UNIQUE_PASSWORD" and user_pass == ADMIN_PASS:
                         try:
                             os.remove("messages.txt")
                         except:
